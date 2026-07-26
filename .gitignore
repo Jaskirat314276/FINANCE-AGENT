@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+coverage/
+.vite/
+apps/api/prisma/migrations/dev.db*
+.idea/
+.vscode/
+
+# ── Documentation kept local (not published) ─────────────────
+# Only README.md is tracked; all other markdown docs stay out of the repo.
+# Screenshots under docs/screenshots/ are intentionally NOT ignored (README uses them).
+/PROJECT_EXPLAINED.md
+/FUTURE_CHANGES.md
+/TERMINALCHAT.md
+/ARCHITECTURE.md
+/DATAFLOW.md
+docs/*.md

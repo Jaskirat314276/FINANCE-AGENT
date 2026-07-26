@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+  /* Chart roles — validated dark palette (dataviz skill, surface #141c2f) */
+  --surface-1: #141c2f;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --grid-hairline: rgba(148, 163, 184, 0.12);
+  --series-1: #3987e5;
+  --series-2: #008300;
+  --series-3: #d55181;
+  --series-4: #c98500;
+  --series-5: #199e70;
+  --series-6: #d95926;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink-900 font-sans text-slate-200 antialiased;
+  background-image:
+    radial-gradient(1000px 600px at 85% -10%, rgba(57, 135, 229, 0.14), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, rgba(52, 211, 153, 0.1), transparent 55%),
+    radial-gradient(700px 500px at 50% 110%, rgba(144, 133, 233, 0.08), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+::selection {
+  @apply bg-accent/30 text-white;
+}
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink-900;
+}
+
+/* ── Glass system ──────────────────────────────────────────── */
+@layer components {
+  .glass {
+    @apply rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-glass backdrop-blur-xl;
+  }
+  .glass-hover {
+    @apply transition duration-200 hover:border-white/[0.16] hover:bg-white/[0.06];
+  }
+  .glass-inset {
+    @apply rounded-xl border border-white/[0.06] bg-ink-900/50;
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent-soft via-accent to-series-1 bg-clip-text text-transparent;
+  }
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-500/30;
+  }
+}
+
+/* Recharts chrome — recessive grid/axes per dataviz spec */
+.recharts-cartesian-grid line {
+  stroke: var(--grid-hairline);
+}
+.recharts-cartesian-axis-tick text {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+.recharts-cartesian-axis line {
+  stroke: rgba(148, 163, 184, 0.2);
+}
+
+/* Number inputs without spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

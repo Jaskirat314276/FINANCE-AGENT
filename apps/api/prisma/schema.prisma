@@ -1,0 +1,337 @@
+// Seeker AI — PostgreSQL schema
+// Profiles capture the full 9-step onboarding; generated artefacts
+// (portfolios, advisor answers) are stored as validated JSON documents.
+
+generator client {
+  provider   = "prisma-client-js"
+  // Rust-free client: WASM query compiler + pg driver adapter.
+  // No engine binaries at generate or run time.
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum EmploymentType {
+  STUDENT
+  SELF_EMPLOYED
+  BUSINESS
+  GOVERNMENT
+  PRIVATE
+  RETIRED
+}
+
+enum IncomeStability {
+  VERY_STABLE
+  STABLE
+  VARIABLE
+  UNSTABLE
+}
+
+enum RiskBand {
+  LOW
+  MEDIUM
+  AGGRESSIVE
+  VERY_AGGRESSIVE
+}
+
+enum Horizon {
+  LT_1Y
+  Y1_3
+  Y3_5
+  Y5_10
+  GT_10Y
+}
+
+enum GoalType {
+  RETIREMENT
+  HOUSE
+  CAR
+  MARRIAGE
+  CHILD_EDUCATION
+  VACATION
+  WEALTH_CREATION
+  PASSIVE_INCOME
+  FINANCIAL_FREEDOM
+  CUSTOM
+}
+
+enum TaxSlab {
+  NONE
+  S5
+  S10
+  S15
+  S20
+  S30
+}
+
+enum CapitalGainPref {
+  LONG_TERM
+  SHORT_TERM
+  BALANCED
+}
+
+enum InvestingStyle {
+  ESG
+  DIVIDEND
+  GROWTH
+  VALUE
+  MOMENTUM
+}
+
+enum MarketCapPref {
+  SMALL_CAP
+  MID_CAP
+  LARGE_CAP
+  BLUE_CHIP
+}
+
+enum Sector {
+  TECHNOLOGY
+  BANKING
+  FINANCIAL_SERVICES
+  HEALTHCARE
+  PHARMA
+  AUTO
+  ENERGY
+  FMCG
+  MANUFACTURING
+  INFRASTRUCTURE
+  METALS
+  TELECOM
+  CONSUMER
+  DEFENCE
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+enum AlertKind {
+  PRICE_ABOVE
+  PRICE_BELOW
+  PCT_MOVE
+  RSI_OVERBOUGHT
+  RSI_OVERSOLD
+  NEWS
+  FUNDAMENTAL
+}
+
+// ── Models ───────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String?
+  googleId     String?  @unique
+  avatarUrl    String?
+  onboarded    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile       FinancialProfile?
+  portfolios    Portfolio[]
+  watchlist     WatchlistItem[]
+  alerts        Alert[]
+  chatSessions  ChatSession[]
+  advisorQueries AdvisorQuery[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FinancialProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Step 1 — personal
+  age            Int
+  gender         Gender
+  occupation     String
+  city           String
+  employmentType EmploymentType
+  dependents     Int            @default(0)
+
+  // Step 2 — income
+  monthlyIncome           Float
+  annualIncome            Float
+  incomeStability         IncomeStability
+  expectedSalaryGrowthPct Float           @default(0)
+
+  // Step 3 — financial situation
+  currentSavings  Float
+  emergencyFund   Float
+  monthlyExpenses Float
+  monthlyEmi      Float @default(0)
+  invFd           Float @default(0)
+  invMutualFunds  Float @default(0)
+  invStocks       Float @default(0)
+  invGold         Float @default(0)
+  invCrypto       Float @default(0)
+  invRealEstate   Float @default(0)
+  invPpf          Float @default(0)
+  invEpf          Float @default(0)
+
+  // Step 5 — risk (raw answers + derived)
+  riskAnswers Json
+  riskScore   Int
+  riskBand    RiskBand
+
+  // Step 6 — horizon
+  horizon Horizon
+
+  // Step 7 — amounts
+  monthlySip                  Float @default(0)
+  lumpSum                     Float @default(0)
+  annualInvestment            Float @default(0)
+  maxSingleStockAllocationPct Float @default(25)
+
+  // Step 8 — preferences
+  styles           InvestingStyle[]
+  marketCapPrefs   MarketCapPref[]
+  preferredSectors Sector[]
+  avoidSectors     Sector[]
+
+  // Step 9 — tax
+  taxSlab         TaxSlab
+  used80cAmount   Float           @default(0)
+  capitalGainPref CapitalGainPref
+
+  // Derived scores
+  financialHealthScore     Int @default(0)
+  investmentReadinessScore Int @default(0)
+
+  goals     Goal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Goal {
+  id           String           @id @default(uuid())
+  profileId    String
+  profile      FinancialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  type         GoalType
+  label        String?
+  targetAmount Float
+  targetYears  Float
+  priority     Int              @default(2)
+  createdAt    DateTime         @default(now())
+
+  @@index([profileId])
+}
+
+model Portfolio {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Float
+  monthlySip Float    @default(0)
+  riskBand   RiskBand
+  riskScore  Int
+  horizon    Horizon
+  /// Full GeneratedPortfolio document (validated server-side)
+  data       Json
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol      String
+  note        String?
+  targetPrice Float?
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, symbol])
+  @@index([userId])
+}
+
+model Alert {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol          String
+  kind            AlertKind
+  threshold       Float?
+  active          Boolean   @default(true)
+  message         String?
+  lastTriggeredAt DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, symbol])
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String        @default("New conversation")
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id         String      @id @default(uuid())
+  sessionId  String
+  session    ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role       ChatRole
+  content    String
+  /// AdvisorResponse JSON when the assistant returned a structured advisory
+  structured Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([sessionId])
+}
+
+model AdvisorQuery {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question  String
+  /// AdvisorResponse JSON (schema-validated)
+  response  Json
+  /// AdvisorMeta JSON — provider, model, latency, symbols, demoMode
+  meta      Json
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Small persistent cache for expensive provider calls (quotes survive restarts).
+model MarketCache {
+  key       String   @id
+  data      Json
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+}
