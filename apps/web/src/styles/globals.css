@@ -3,8 +3,37 @@
 @tailwind utilities;
 
 /* ── Design tokens ─────────────────────────────────────────── */
+/* :root holds the DARK theme (unchanged from the original palette).
+   html.light overrides the same tokens with an inverted ramp — every
+   Tailwind utility routed through these vars (white/slate/ink/accent)
+   flips automatically, so components need no dark:/light: variants. */
 :root {
   color-scheme: dark;
+
+  /* Theme-aware color channels (space-separated RGB for <alpha-value>) */
+  --c-white: 255 255 255;
+  --c-slate-100: 241 245 249;
+  --c-slate-200: 226 232 240;
+  --c-slate-300: 203 213 225;
+  --c-slate-400: 148 163 184;
+  --c-slate-500: 100 116 139;
+  --c-slate-600: 71 85 105;
+  --c-ink-950: 7 11 22;
+  --c-ink-900: 11 17 33;
+  --c-ink-800: 17 26 48;
+  --c-ink-700: 26 37 66;
+  --c-accent: 52 211 153;
+  --c-accent-soft: 110 231 183;
+  --c-accent-deep: 13 150 104;
+
+  /* Custom surfaces themed by hand below */
+  --body-bg: #0b1121;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(2, 6, 23, 0.45);
+  --glass-inset-bg: rgba(11, 17, 33, 0.5);
+  --glass-inset-border: rgba(255, 255, 255, 0.06);
+
   /* Chart roles — validated dark palette (dataviz skill, surface #141c2f) */
   --surface-1: #141c2f;
   --text-primary: #f1f5f9;
@@ -25,19 +54,62 @@
   --status-critical: #d03b3b;
 }
 
+html.light {
+  color-scheme: light;
+
+  /* Inverted text/surface ramp: primary → dark, most-muted → lightest. */
+  --c-white: 15 23 42; /* solid text-white / white-opacity fills become dark */
+  --c-slate-100: 15 23 42;
+  --c-slate-200: 30 41 59;
+  --c-slate-300: 51 65 85;
+  --c-slate-400: 71 85 105;
+  --c-slate-500: 100 116 139;
+  --c-slate-600: 148 163 184;
+  --c-ink-950: 241 245 249;
+  --c-ink-900: 248 250 252;
+  --c-ink-800: 226 232 240;
+  --c-ink-700: 203 213 225;
+  --c-accent: 5 150 105; /* deeper greens stay legible on light surfaces */
+  --c-accent-soft: 4 120 87;
+  --c-accent-deep: 6 95 70;
+
+  --body-bg: #eef2f9;
+  --glass-bg: #ffffff;
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  --glass-inset-bg: rgba(15, 23, 42, 0.03);
+  --glass-inset-border: rgba(15, 23, 42, 0.07);
+
+  /* Chart chrome retuned for a light surface */
+  --surface-1: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --grid-hairline: rgba(15, 23, 42, 0.1);
+}
+
 /* ── Base ──────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-ink-900 font-sans text-slate-200 antialiased;
+  @apply font-sans text-slate-200 antialiased;
+  background-color: var(--body-bg);
   background-image:
     radial-gradient(1000px 600px at 85% -10%, rgba(57, 135, 229, 0.14), transparent 60%),
     radial-gradient(900px 500px at -10% 20%, rgba(52, 211, 153, 0.1), transparent 55%),
     radial-gradient(700px 500px at 50% 110%, rgba(144, 133, 233, 0.08), transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* Softer, cooler wash for the light canvas. */
+html.light body {
+  background-image:
+    radial-gradient(1000px 600px at 85% -10%, rgba(57, 135, 229, 0.1), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, rgba(5, 150, 105, 0.08), transparent 55%),
+    radial-gradient(700px 500px at 50% 110%, rgba(99, 102, 241, 0.06), transparent 60%);
 }
 
 ::selection {
@@ -51,13 +123,18 @@ body {
 /* ── Glass system ──────────────────────────────────────────── */
 @layer components {
   .glass {
-    @apply rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-glass backdrop-blur-xl;
+    @apply rounded-2xl backdrop-blur-xl;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
   }
   .glass-hover {
     @apply transition duration-200 hover:border-white/[0.16] hover:bg-white/[0.06];
   }
   .glass-inset {
-    @apply rounded-xl border border-white/[0.06] bg-ink-900/50;
+    @apply rounded-xl;
+    background-color: var(--glass-inset-bg);
+    border: 1px solid var(--glass-inset-border);
   }
   .text-gradient {
     @apply bg-gradient-to-r from-accent-soft via-accent to-series-1 bg-clip-text text-transparent;
@@ -96,4 +173,18 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* ── Light-mode fix-ups ────────────────────────────────────── */
+/* Floating panels use `shadow-glass` directly — swap the heavy dark shadow. */
+html.light .shadow-glass {
+  box-shadow: var(--glass-shadow);
+}
+html.light .recharts-cartesian-axis line {
+  stroke: rgba(15, 23, 42, 0.18);
+}
+/* Danger button: keep white text on the saturated red fill in both themes
+   (solid `text-white` otherwise flips to dark via the theme ramp). */
+html.light .bg-status-critical\/90 {
+  color: #ffffff;
 }

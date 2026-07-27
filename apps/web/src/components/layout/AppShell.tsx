@@ -19,6 +19,7 @@ import { SEBI_DISCLAIMER } from '@seeker/shared';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Logo } from './Logo';
 
 const NAV = [
@@ -88,6 +89,10 @@ export function AppShell() {
               <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
             </button>
           </div>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-medium text-slate-500">Appearance</span>
+            <ThemeToggle />
+          </div>
           <p className="px-1 text-[9px] leading-relaxed text-slate-600">{SEBI_DISCLAIMER}</p>
         </div>
       </aside>
@@ -95,9 +100,12 @@ export function AppShell() {
       {/* Mobile top bar */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-white/[0.06] bg-ink-950/80 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Logo />
-        <button onClick={() => setMobileOpen((v) => !v)} className="text-slate-300" aria-label="Toggle menu">
-          {mobileOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button onClick={() => setMobileOpen((v) => !v)} className="text-slate-300" aria-label="Toggle menu">
+            {mobileOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
       {mobileOpen && (
         <div className="fixed inset-0 z-30 bg-ink-950/95 px-4 pb-8 pt-20 backdrop-blur-xl lg:hidden">

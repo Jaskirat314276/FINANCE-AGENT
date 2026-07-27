@@ -12,6 +12,7 @@ import {
 import { SEBI_DISCLAIMER } from '@seeker/shared';
 import { Logo } from '@/components/layout/Logo';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuthStore } from '@/stores/auth.store';
 
 const FEATURES = [
@@ -66,6 +67,7 @@ export default function LandingPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Logo />
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link to="/auth" className="text-sm text-slate-300 transition hover:text-white">
             Sign in
           </Link>

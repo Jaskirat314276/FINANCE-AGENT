@@ -6,17 +6,29 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Theme-aware tokens — values live in :root / html.light (see globals.css).
+        // Dark values are byte-identical to the originals; light supplies an
+        // inverted ramp so all utilities flip without touching components.
+        white: 'rgb(var(--c-white) / <alpha-value>)',
+        slate: {
+          100: 'rgb(var(--c-slate-100) / <alpha-value>)',
+          200: 'rgb(var(--c-slate-200) / <alpha-value>)',
+          300: 'rgb(var(--c-slate-300) / <alpha-value>)',
+          400: 'rgb(var(--c-slate-400) / <alpha-value>)',
+          500: 'rgb(var(--c-slate-500) / <alpha-value>)',
+          600: 'rgb(var(--c-slate-600) / <alpha-value>)',
+        },
         // App canvas + glass system
         ink: {
-          950: '#070b16',
-          900: '#0b1121',
-          800: '#111a30',
-          700: '#1a2542',
+          950: 'rgb(var(--c-ink-950) / <alpha-value>)',
+          900: 'rgb(var(--c-ink-900) / <alpha-value>)',
+          800: 'rgb(var(--c-ink-800) / <alpha-value>)',
+          700: 'rgb(var(--c-ink-700) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#34d399',
-          soft: '#6ee7b7',
-          deep: '#0d9668',
+          DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',
+          soft: 'rgb(var(--c-accent-soft) / <alpha-value>)',
+          deep: 'rgb(var(--c-accent-deep) / <alpha-value>)',
         },
         // Validated dark-mode chart palette (dataviz slots 1–8)
         series: {
