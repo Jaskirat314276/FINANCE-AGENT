@@ -4,6 +4,8 @@ import { api } from '@/lib/api';
 
 export interface DashboardSummary {
   user: { name: string };
+  /** True when the user skipped onboarding and runs on the neutral default profile. */
+  onboardingSkipped?: boolean;
   netWorth: number;
   investedTotal: number;
   monthlyInvestment: number;

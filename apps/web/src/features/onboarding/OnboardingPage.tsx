@@ -82,11 +82,38 @@ export default function OnboardingPage() {
 
   const progress = useMemo(() => ((stepIndex - 1) / 9) * 100, [stepIndex]);
 
+  // "Skip for now" — provision a neutral default profile server-side so the
+  // user can explore the whole app immediately; the dashboard will offer to
+  // personalize later.
+  const skip = async () => {
+    setSubmitting(true);
+    try {
+      await api.post('/profile/onboarding/skip', {});
+      markOnboarded();
+      reset();
+      toast.success('Exploring on a default profile — personalize anytime from the dashboard');
+      navigate('/app', { replace: true });
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not skip onboarding');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-8 sm:py-12">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-3">
         <Logo />
-        <span className="text-xs text-slate-500">Step {stepIndex} of 9</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={skip}
+            disabled={submitting}
+            className="text-xs text-slate-500 underline-offset-2 transition hover:text-slate-300 hover:underline disabled:opacity-50"
+          >
+            Skip for now — just explore
+          </button>
+          <span className="text-xs text-slate-500">Step {stepIndex} of 9</span>
+        </div>
       </div>
 
       {/* Progress rail */}

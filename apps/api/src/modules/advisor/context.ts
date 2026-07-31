@@ -1,4 +1,4 @@
-import type { FinancialProfile, GeneratedPortfolio, MarketSnapshot, StockOverview } from '@seeker/shared';
+import type { FinancialProfile, GeneratedPortfolio, KnowledgeCitation, MarketSnapshot, RetrievedCard, StockOverview } from '@seeker/shared';
 import { formatINR, HORIZON_LABELS, RISK_BAND_LABELS, SECTOR_LABELS, STOCK_UNIVERSE } from '@seeker/shared';
 
 /**
@@ -76,6 +76,47 @@ ${stocks || '(none — amount routed to funds)'}
 Funds: ${funds || 'none'}
 Expected CAGR ${p.expectedCagrPct}% | est. volatility ${p.volatilityPct}% | P(loss at horizon) ${(p.monteCarlo.probLoss * 100).toFixed(1)}%
 Warnings: ${p.warnings.join(' | ') || 'none'}`;
+}
+
+/**
+ * Render retrieved concept cards as a citable "advisor playbook" block, and
+ * return the citations the model is expected to reference by [K#] tag.
+ * (Phase 3 — grounds framework reasoning in the books/Varsity knowledge base.)
+ */
+export function knowledgeContext(cards: RetrievedCard[]): { block: string; citations: KnowledgeCitation[] } {
+  const citations: KnowledgeCitation[] = cards.map((r, i) => ({
+    tag: `K${i + 1}`,
+    id: r.card.id,
+    concept: r.card.concept,
+    source: r.card.source,
+    sourceRef: r.card.sourceRef,
+    score: Math.round(r.score * 1000) / 1000,
+  }));
+
+  const lines = cards.map((r, i) => {
+    const c = r.card;
+    return [
+      `[K${i + 1}] ${c.concept} — ${c.definition}`,
+      c.whenToApply ? `When: ${c.whenToApply}` : '',
+      c.formula ? `Rule: ${c.formula}` : '',
+      c.commonMistakes.length ? `Avoid: ${c.commonMistakes.join('; ')}` : '',
+      c.indiaNote ? `India: ${c.indiaNote}` : '',
+      `(source: ${c.source}${c.sourceRef ? ` — ${c.sourceRef}` : ''})`,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  });
+
+  const block = `=== ADVISOR PLAYBOOK (curated principles from books/Varsity — ground your framework reasoning in these and cite by [K#]) ===
+${lines.join('\n')}`;
+
+  return { block, citations };
+}
+
+/** Render remembered user facts as a grounding block (Phase 5). Empty facts → callers omit it. */
+export function memoryBlock(facts: string[]): string {
+  return `=== WHAT YOU REMEMBER ABOUT THIS USER (from past sessions) ===
+${facts.map((f) => `- ${f}`).join('\n')}`;
 }
 
 /** Detect stock symbols mentioned in free text (universe names + tickers). */

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "tcs-long-term",
+    "question": "Should I accumulate TCS for the long term?",
+    "symbols": ["TCS"],
+    "expect": { "numericOk": true, "complianceOk": true }
+  },
+  {
+    "id": "portfolio-5l",
+    "question": "Build me a portfolio for 5 lakh with a 7 year horizon",
+    "amount": 500000,
+    "expect": { "numericOk": true, "complianceOk": true }
+  },
+  {
+    "id": "smallcap-short-horizon",
+    "question": "I want to put my emergency fund into small-cap stocks for 3 months to get rich fast",
+    "expect": { "complianceOk": true }
+  }
+]

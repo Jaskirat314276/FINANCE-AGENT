@@ -1,6 +1,6 @@
 import type { FinancialProfile as ProfileRow, Goal as GoalRow, Prisma } from '@prisma/client';
 import type { FinancialProfile, HealthScoreReport, OnboardingInput } from '@seeker/shared';
-import { DEFAULT_INFLATION_PCT, inflate, lumpSumFutureValue, sipRequiredForTarget } from '@seeker/shared';
+import { DEFAULT_INFLATION_PCT, inflate, lumpSumFutureValue, RISK_QUESTIONS, sipRequiredForTarget } from '@seeker/shared';
 import { prisma } from '../../lib/prisma';
 import { ApiError } from '../../middleware/error';
 import { computeFinancialHealth, computeInvestmentReadiness, computeRiskScore } from './scoring';
@@ -58,17 +58,23 @@ export function toProfileDto(row: ProfileRow & { goals: GoalRow[] }): FinancialP
     riskBand: row.riskBand,
     financialHealthScore: row.financialHealthScore,
     investmentReadinessScore: row.investmentReadinessScore,
+    onboardingSkipped: row.onboardingSkipped,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-export async function saveOnboarding(userId: string, input: OnboardingInput): Promise<FinancialProfile> {
+export async function saveOnboarding(
+  userId: string,
+  input: OnboardingInput,
+  opts: { skipped?: boolean } = {},
+): Promise<FinancialProfile> {
   const { score: riskScore, band: riskBand } = computeRiskScore(input);
   const health = computeFinancialHealth(input);
   const readiness = computeInvestmentReadiness(input);
 
   const data = {
+    onboardingSkipped: opts.skipped ?? false,
     age: input.age,
     gender: input.gender,
     occupation: input.occupation,
@@ -132,6 +138,52 @@ export async function saveOnboarding(userId: string, input: OnboardingInput): Pr
   });
 
   return toProfileDto(profile);
+}
+
+/**
+ * "Skip for now" — create a neutral default profile so a curious user can
+ * explore every feature immediately. Risk answers are the LOWER-middle option
+ * of each quiz question (computed, not hardcoded) so the derived band lands
+ * MEDIUM — an unknown explorer must never default to aggressive advice. The
+ * profile is flagged `onboardingSkipped` so the dashboard can prompt to
+ * personalize, and any later real onboarding submit clears the flag.
+ */
+export async function skipOnboarding(userId: string): Promise<FinancialProfile> {
+  const neutralAnswers = Object.fromEntries(
+    RISK_QUESTIONS.map((q) => [q.id, q.options[Math.max(0, Math.floor(q.options.length / 2) - 1)]!.score]),
+  );
+  const defaults: OnboardingInput = {
+    age: 30,
+    gender: 'PREFER_NOT_TO_SAY',
+    occupation: 'Exploring Seeker',
+    city: 'India',
+    employmentType: 'PRIVATE',
+    dependents: 0,
+    monthlyIncome: 60_000,
+    annualIncome: 7_20_000,
+    incomeStability: 'STABLE',
+    expectedSalaryGrowthPct: 5,
+    currentSavings: 1_50_000,
+    emergencyFund: 1_20_000,
+    monthlyExpenses: 35_000,
+    monthlyEmi: 0,
+    existingInvestments: { fd: 0, mutualFunds: 0, stocks: 0, gold: 0, crypto: 0, realEstate: 0, ppf: 0, epf: 0 },
+    goals: [],
+    riskAnswers: neutralAnswers,
+    horizon: 'Y3_5',
+    monthlySip: 10_000,
+    lumpSum: 1_00_000,
+    annualInvestment: 0,
+    maxSingleStockAllocationPct: 25,
+    styles: [],
+    marketCapPrefs: [],
+    preferredSectors: [],
+    avoidSectors: [],
+    taxSlab: 'S20',
+    used80cAmount: 0,
+    capitalGainPref: 'BALANCED',
+  };
+  return saveOnboarding(userId, defaults, { skipped: true });
 }
 
 export async function getProfile(userId: string): Promise<FinancialProfile> {
@@ -223,6 +275,7 @@ export async function getDashboardSummary(userId: string) {
     assetAllocation,
     goalProgress,
     suggestions: buildSuggestions(profile, health, surplus),
+    onboardingSkipped: profile.onboardingSkipped ?? false,
   };
 }
 

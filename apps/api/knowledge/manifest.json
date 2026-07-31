@@ -1,0 +1,45 @@
+{
+  "notes": [
+    "Curated ingest list for the Seeker knowledge base. Paths are repo-root-relative.",
+    "tier 1 = Zerodha Varsity (core Indian curriculum) · tier 2 = investing classics · tier 3 = TA/specialist books.",
+    "enabled:false entries are deliberate: duplicates (one variant kept), off-domain forex/day-trading books, very large books deferred until the core is in, and all PDFs (PDF→markdown step not wired yet).",
+    "Run: npm run knowledge:ingest -w @seeker/api -- --manifest knowledge/manifest.json --tier 1 --limit 50"
+  ],
+  "sources": [
+    { "path": "docs/Module 1_Introduction to Stock Markets.md", "source": "Varsity: Introduction to Stock Markets", "tier": 1, "enabled": true },
+    { "path": "docs/Module 2_Technical Analysis.md", "source": "Varsity: Technical Analysis", "tier": 1, "enabled": true },
+    { "path": "docs/Module 3_Fundamental Analysis.md", "source": "Varsity: Fundamental Analysis", "tier": 1, "enabled": true },
+    { "path": "docs/Module 4_Futures Trading.md", "source": "Varsity: Futures Trading", "tier": 1, "enabled": true },
+    { "path": "docs/Module 5_Options-Theory-for-Professional-Trading.md", "source": "Varsity: Options Theory", "tier": 1, "enabled": true },
+    { "path": "docs/Module 6_Option Strategies.md", "source": "Varsity: Option Strategies", "tier": 1, "enabled": true },
+    { "path": "docs/Module 7_Markets & Taxation.md", "source": "Varsity: Markets & Taxation", "tier": 1, "enabled": true },
+    { "path": "docs/Module 8_Currency and Commodity Futures.md", "source": "Varsity: Currency & Commodity Futures", "tier": 1, "enabled": true },
+    { "path": "docs/Module 9_Risk Management & Trading Psychology.md", "source": "Varsity: Risk Management & Trading Psychology", "tier": 1, "enabled": true },
+    { "path": "docs/Module 10_Trading Systems.md", "source": "Varsity: Trading Systems", "tier": 1, "enabled": true },
+    { "path": "docs/Module11_Personal-Finance.md", "source": "Varsity: Personal Finance", "tier": 1, "enabled": true },
+    { "path": "docs/Module 13.md", "source": "Varsity: Module 13", "tier": 1, "enabled": true },
+    { "path": "docs/Module 14_Personal Finance Insurance.md", "source": "Varsity: Personal Finance — Insurance", "tier": 1, "enabled": true },
+    { "path": "docs/NPS_National-Pension-System.md", "source": "Varsity: National Pension System", "tier": 1, "enabled": true },
+
+    { "path": "docs/epdf.pub_the-intelligent-investor.md", "source": "The Intelligent Investor (Benjamin Graham)", "tier": 2, "enabled": true },
+    { "path": "docs/ARandomWalkDownWallStreet11thEdition2015.md", "source": "A Random Walk Down Wall Street (Burton Malkiel)", "tier": 2, "enabled": true, "note": "11th-edition variant kept; other copies disabled below" },
+    { "path": "docs/[Mohnish_Pabrai]_The_Dhandho_Investor_The_Low_-_R.md", "source": "The Dhandho Investor (Mohnish Pabrai)", "tier": 2, "enabled": true },
+    { "path": "docs/Parag-Parikh-Stocks-to-Riches-2005-Tata-McGraw-Hill-Education.md", "source": "Stocks to Riches (Parag Parikh)", "tier": 2, "enabled": true, "note": "Indian behavioural-investing classic" },
+
+    { "path": "docs/John J Murphy - Technical Analysis Of The Financial Markets.md", "source": "Technical Analysis of the Financial Markets (John Murphy)", "tier": 3, "enabled": true, "note": "large; TA reference — most cards will be longtail" },
+    { "path": "docs/BeyondCandlesticksmarkdown/Beyond-Candlesticks.md", "source": "Beyond Candlesticks (Steve Nison)", "tier": 3, "enabled": true, "note": "primary variant; annotated/plain/second-scan copies disabled below" },
+    { "path": "docs/Innerworth_Mind-over-Markets.md", "source": "Innerworth: Mind over Markets", "tier": 3, "enabled": false, "note": "1.5MB — enable after the core ingest is complete" },
+    { "path": "docs/Algorithmic_Trading_Chan_markdown/Algorithmic_Trading_Chan.md", "source": "Algorithmic Trading (Ernest Chan)", "tier": 3, "enabled": false, "note": "algo/quant trading — off-domain for a long-term retail advisor" },
+
+    { "path": "docs/ARandomWalkDownWallStreet.md", "source": "DUPLICATE — Random Walk (base copy)", "tier": 9, "enabled": false, "note": "duplicate of the 11th-edition entry" },
+    { "path": "docs/ARandomWalkDownWallStreetmarkdown/A-Random-Walk-Down-Wall-Street.md", "source": "DUPLICATE — Random Walk (folder copy)", "tier": 9, "enabled": false, "note": "duplicate" },
+    { "path": "docs/BeyondCandlesticksannotatedmarkdown/Beyond-Candlesticks.md", "source": "DUPLICATE — Beyond Candlesticks (annotated)", "tier": 9, "enabled": false, "note": "variant duplicate" },
+    { "path": "docs/BeyondCandlesticksplainmarkdown/Beyond-Candlesticks.md", "source": "DUPLICATE — Beyond Candlesticks (plain)", "tier": 9, "enabled": false, "note": "variant duplicate" },
+    { "path": "docs/BeyondCandlestickssecondscanmarkdown/Beyond-Candlesticks.md", "source": "DUPLICATE — Beyond Candlesticks (second scan)", "tier": 9, "enabled": false, "note": "variant duplicate" },
+    { "path": "docs/17ProvenCurrencyTradingStrategies.md", "source": "OFF-DOMAIN — 17 Proven Currency Trading Strategies", "tier": 9, "enabled": false, "note": "forex trading — would pollute retrieval for a long-term Indian equity advisor" },
+    { "path": "docs/17ProvenCurrencyTradingStrategiesmarkdown/17-Proven-Currency-Trading-Strategies.md", "source": "OFF-DOMAIN — 17 Proven (folder copy)", "tier": 9, "enabled": false, "note": "forex + duplicate" },
+    { "path": "docs/AttackingCurrencyTrends.md", "source": "OFF-DOMAIN — Attacking Currency Trends", "tier": 9, "enabled": false, "note": "forex trading" },
+    { "path": "docs/AttackingCurrencyTrendsmarkdown/Attacking-Currency-Trends.md", "source": "OFF-DOMAIN — Attacking Currency Trends (folder copy)", "tier": 9, "enabled": false, "note": "forex + duplicate" },
+    { "path": "docs/Adventures of a Currency Trader Markdown", "source": "OFF-DOMAIN — Adventures of a Currency Trader", "tier": 9, "enabled": false, "note": "forex trading" }
+  ]
+}

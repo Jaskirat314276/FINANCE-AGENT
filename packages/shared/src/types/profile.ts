@@ -147,6 +147,8 @@ export interface FinancialProfile extends FinancialProfileInput {
   riskBand: RiskBand;
   financialHealthScore: number; // 0–100
   investmentReadinessScore: number; // 0–100
+  /** True when the user skipped onboarding and runs on the neutral default profile. */
+  onboardingSkipped?: boolean;
   createdAt: string;
   updatedAt: string;
 }

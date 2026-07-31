@@ -225,6 +225,9 @@ model FinancialProfile {
   financialHealthScore     Int @default(0)
   investmentReadinessScore Int @default(0)
 
+  /// True when the user skipped onboarding and runs on the neutral default profile
+  onboardingSkipped Boolean @default(false)
+
   goals     Goal[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

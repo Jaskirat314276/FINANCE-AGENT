@@ -1,0 +1,35 @@
+# Render blueprint — deploys the Seeker API (Express + Prisma).
+# The web app deploys separately to Vercel (see DEPLOY.md); the DB lives on Supabase (or Neon).
+services:
+  - type: web
+    name: seeker-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build -w @seeker/shared && npm run build -w @seeker/api
+    startCommand: npm run start -w @seeker/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false # paste your Supabase SESSION-POOLER string (or Neon string) in the Render dashboard
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # your Vercel URL, e.g. https://seeker-ai.vercel.app
+      - key: AI_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false # paste in dashboard — never commit keys
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: MARKET_PROVIDERS
+        value: nse,yahoo,mock
+      - key: EMBEDDINGS_PROVIDER
+        value: none # no Ollama in the cloud → keyword retrieval over the shipped card store
+      - key: KNOWLEDGE_STORE_PATH
+        value: apps/api/knowledge/cards-lite.json

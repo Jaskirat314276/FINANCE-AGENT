@@ -1,16 +1,22 @@
-import type { AdvisorResponse, AdvisorResult, AiStockSummary, GeneratedPortfolio, StockOverview } from '@seeker/shared';
+import type { AdvisorFrameworkReview, AdvisorResponse, AdvisorResult, AdvisorVerification, AiStockSummary, GeneratedPortfolio, RetrievedCard, StockOverview } from '@seeker/shared';
 import { advisorResponseSchema, aiStockSummarySchema, SEBI_DISCLAIMER } from '@seeker/shared';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { logger } from '../../lib/logger';
+import { env } from '../../config/env';
 import * as market from '../market/market.service';
 import { getProfile } from '../profile/profile.service';
 import { generatePortfolio } from '../portfolio/engine';
 import { getLlm } from './llm';
+import type { LlmClient } from './llm/types';
 import { extractJson } from './llm/types';
-import { ADVISOR_SYSTEM_PROMPT, repairPrompt, STOCK_SUMMARY_PROMPT } from './prompts';
-import { detectAmount, detectSymbols, marketBlock, portfolioBlock, profileBlock, stockBlock } from './context';
+import { ADVISOR_SYSTEM_PROMPT, compliancePrompt, numericRepairPrompt, repairPrompt, STOCK_SUMMARY_PROMPT } from './prompts';
+import { detectAmount, detectSymbols, knowledgeContext, marketBlock, memoryBlock, portfolioBlock, profileBlock, stockBlock } from './context';
 import { demoAdvise } from './demo-advisor';
+import { verifyNumbers, type GroundTruth } from './verifier';
+import { reviewFramework } from './framework-verifier';
+import { retrieveCards } from '../knowledge/retrieve';
+import { getUserMemory } from '../memory/store';
 
 /**
  * Advisor orchestration:
@@ -36,7 +42,7 @@ export async function ask(userId: string, params: AskParams): Promise<AdvisorRes
   const amount = params.amount ?? detectAmount(params.question);
   const wantsPortfolio = symbols.length === 0 && (amount !== null || PORTFOLIO_INTENT.test(params.question));
 
-  const [snapshot, overviews, portfolio] = await Promise.all([
+  const [snapshot, overviews, portfolio, cards, memoryFacts] = await Promise.all([
     market.getMarketSnapshot(),
     Promise.all(symbols.map((s) => market.getOverview(s).catch(() => null))).then(
       (list) => list.filter((o): o is StockOverview => o !== null),
@@ -53,13 +59,21 @@ export async function ask(userId: string, params: AskParams): Promise<AdvisorRes
           return null;
         })
       : Promise.resolve(null),
+    // Phase 3 — pull relevant book/Varsity concept cards (empty until ingested).
+    retrieveCards(`${params.question} ${symbols.join(' ')}`).catch((): RetrievedCard[] => []),
+    // Phase 5 — remembered facts about this user (empty until anything is written).
+    getUserMemory(userId).catch((): string[] => []),
   ]);
+
+  const knowledge = cards.length > 0 ? knowledgeContext(cards) : null;
 
   const blocks = [
     profileBlock(profile),
+    ...(memoryFacts.length > 0 ? [memoryBlock(memoryFacts)] : []),
     marketBlock(snapshot),
     ...overviews.map(stockBlock),
     ...(portfolio ? [portfolioBlock(portfolio)] : []),
+    ...(knowledge ? [knowledge.block] : []),
   ].join('\n\n');
 
   const userPrompt = `${blocks}
@@ -74,6 +88,8 @@ Respond with the single JSON object per your instructions. Every claim must trac
   let response: AdvisorResponse | null = null;
   let provider = 'rule-engine';
   let model = 'seeker-deterministic-v1';
+  let verification: AdvisorVerification | undefined;
+  let framework: AdvisorFrameworkReview | undefined;
 
   if (llm) {
     provider = llm.provider;
@@ -91,12 +107,66 @@ Respond with the single JSON object per your instructions. Every claim must trac
           jsonMode: true,
         }),
     );
+
+    // Phase 1 — numeric verifier: every number in the answer must reconcile
+    // with the data the model was given. One targeted repair, else fall back.
+    if (response) {
+      const ground: GroundTruth = { profile, snapshot, overviews, portfolio, amount };
+      verification = verifyNumbers(response, ground);
+      if (!verification.ok) {
+        logger.warn('advisor numeric verification failed — attempting numeric repair', {
+          provider: llm.provider,
+          contradictions: verification.contradictions.length,
+          detail: verification.summary,
+        });
+        const repaired = await numericRepair(llm, userPrompt, response, verification);
+        if (repaired) {
+          const recheck = verifyNumbers(repaired, ground);
+          response = repaired;
+          verification = recheck;
+        }
+        if (!verification.ok) {
+          logger.error('advisor numeric verification failed after repair — falling back to rule engine', {
+            provider: llm.provider,
+            detail: verification.summary,
+          });
+          response = null;
+          provider = `${llm.provider}→rule-engine (numeric-guard)`;
+        }
+      }
+    }
+
+    // Phase 4 — compliance + framework review. The compliance scan is
+    // deterministic and always enforced; the LLM grounding check is opt-in
+    // (FRAMEWORK_CHECK=on) and only runs when cards were retrieved.
+    if (response) {
+      framework = await reviewFramework(response, cards, llm, env.FRAMEWORK_CHECK === 'on');
+      if (!framework.ok) {
+        logger.warn('advisor compliance flags — attempting rewrite', {
+          provider: llm.provider,
+          detail: framework.summary,
+        });
+        const repaired = await complianceRepair(llm, userPrompt, response, framework);
+        if (repaired) {
+          response = repaired;
+          framework = await reviewFramework(response, cards, llm, env.FRAMEWORK_CHECK === 'on');
+        }
+        if (!framework.ok) {
+          logger.error('advisor compliance failed after rewrite — falling back to rule engine', {
+            provider: llm.provider,
+            detail: framework.summary,
+          });
+          response = null;
+          provider = `${llm.provider}→rule-engine (compliance-guard)`;
+        }
+      }
+    }
   }
 
   const demoMode = response === null;
   if (!response) {
     response = demoAdvise({ profile, snapshot, overviews, portfolio, question: params.question, amount });
-    if (llm) {
+    if (llm && provider === llm.provider) {
       provider = `${llm.provider}→rule-engine-fallback`;
     }
   }
@@ -110,6 +180,9 @@ Respond with the single JSON object per your instructions. Every claim must trac
     symbolsAnalyzed: symbols,
     dataAsOf: snapshot.asOf,
     demoMode,
+    ...(verification ? { verification } : {}),
+    ...(knowledge ? { knowledge: knowledge.citations } : {}),
+    ...(framework ? { framework } : {}),
   };
 
   const saved = await prisma.advisorQuery.create({
@@ -148,6 +221,60 @@ async function completeStructured(
   } catch (err) {
     logger.error('LLM call failed — falling back to rule engine', {
       provider: providerId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/** One targeted retry that re-sends the flagged numbers for correction. Null on any failure. */
+async function numericRepair(
+  llm: LlmClient,
+  userPrompt: string,
+  previous: AdvisorResponse,
+  report: AdvisorVerification,
+): Promise<AdvisorResponse | null> {
+  try {
+    const raw = await llm.complete({
+      system: ADVISOR_SYSTEM_PROMPT,
+      messages: [
+        { role: 'user', content: userPrompt },
+        { role: 'assistant', content: JSON.stringify(previous).slice(0, 8000) },
+        { role: 'user', content: numericRepairPrompt(report.contradictions) },
+      ],
+      jsonMode: true,
+    });
+    const parsed = advisorResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+    return parsed.success ? parsed.data : null;
+  } catch (err) {
+    logger.warn('advisor numeric repair call failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/** One retry that re-sends the flagged compliance claims for a compliant rewrite. Null on failure. */
+async function complianceRepair(
+  llm: LlmClient,
+  userPrompt: string,
+  previous: AdvisorResponse,
+  review: AdvisorFrameworkReview,
+): Promise<AdvisorResponse | null> {
+  try {
+    const raw = await llm.complete({
+      system: ADVISOR_SYSTEM_PROMPT,
+      messages: [
+        { role: 'user', content: userPrompt },
+        { role: 'assistant', content: JSON.stringify(previous).slice(0, 8000) },
+        { role: 'user', content: compliancePrompt(review.compliance) },
+      ],
+      jsonMode: true,
+    });
+    const parsed = advisorResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+    return parsed.success ? parsed.data : null;
+  } catch (err) {
+    logger.warn('advisor compliance repair call failed', {
       error: err instanceof Error ? err.message : String(err),
     });
     return null;

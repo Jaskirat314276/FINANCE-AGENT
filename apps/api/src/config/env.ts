@@ -28,6 +28,22 @@ const envSchema = z.object({
   OPENAI_COMPAT_API_KEY: z.string().optional().default(''),
   OPENAI_COMPAT_MODEL: z.string().optional().default(''),
 
+  // Knowledge base (Phase 2) — embeddings for concept-card retrieval.
+  EMBEDDINGS_PROVIDER: z.enum(['none', 'ollama', 'openai-compatible']).default('none'),
+  EMBEDDINGS_MODEL: z.string().default('nomic-embed-text'),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  EMBEDDINGS_BASE_URL: z.string().optional().default(''),
+  EMBEDDINGS_API_KEY: z.string().optional().default(''),
+  /** Where the file-backed concept-card store lives (defaults to apps/api/knowledge/cards.json). */
+  KNOWLEDGE_STORE_PATH: z.string().optional().default(''),
+
+  // Phase 4 — opt-in LLM framework-grounding check (compliance scan is always on and free).
+  FRAMEWORK_CHECK: z.enum(['on', 'off']).default('off'),
+  // Phase 5 — per-user memory + web search (both off/empty by default; non-destructive).
+  MEMORY_STORE_PATH: z.string().optional().default(''),
+  WEB_SEARCH_PROVIDER: z.enum(['none', 'tavily']).default('none'),
+  WEB_SEARCH_API_KEY: z.string().optional().default(''),
+
   MARKET_PROVIDERS: z.string().default('nse,yahoo,mock'),
   ALPHAVANTAGE_API_KEY: z.string().optional().default(''),
   TWELVEDATA_API_KEY: z.string().optional().default(''),

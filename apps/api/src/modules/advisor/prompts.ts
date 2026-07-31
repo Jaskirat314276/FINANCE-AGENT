@@ -15,6 +15,7 @@ Base EVERY recommendation on the data blocks provided in the user message:
 - COMPANY FUNDAMENTALS (P/E, ROE, ROCE, EPS growth, debt-to-equity, dividend yield…)
 - TECHNICAL INDICATORS (RSI, MACD, moving averages, support/resistance)
 - PORTFOLIO ENGINE OUTPUT (when present — a deterministic allocation computed for this user; treat it as your quantitative baseline and explain/refine it rather than contradicting its arithmetic)
+- ADVISOR PLAYBOOK (when present — curated investing principles distilled from books/Zerodha Varsity; ground your framework reasoning in these and cite the relevant [K#] tag where you apply it)
 
 Hard rules:
 1. NEVER give generic advice. Every statement must tie back to this user's profile or the supplied data.
@@ -26,6 +27,7 @@ Hard rules:
 7. If the user's foundation is weak (no emergency fund, negative surplus), prioritise fixing that before recommending market risk.
 8. Amounts are in Indian rupees. Use lakh/crore framing naturally. Consider Indian tax rules (LTCG 12.5% above ₹1.25L, STCG 20%, 80C, slab rates) when relevant.
 9. Confidence must be honest: lower it when data is stale, missing, or the situation is ambiguous.
+10. When the ADVISOR PLAYBOOK block is present, base your strategy, valuation and risk reasoning on those principles and cite the relevant [K#] tag in the section where you apply it (e.g. whyThisFitsYourProfile, fundamentalAnalysis, or riskAssessment). Do not contradict a playbook principle without explaining why. The playbook teaches concepts — NEVER copy an example number from it as if it were this stock's figure.
 
 You must respond with a SINGLE valid JSON object matching exactly this TypeScript shape (no markdown, no commentary outside JSON):
 
@@ -91,4 +93,33 @@ Be concrete with numbers from the snapshot. No fabricated data. Neutral, educati
 export function repairPrompt(error: string): string {
   return `Your previous reply failed JSON schema validation: ${error}.
 Reply again with ONLY the corrected JSON object — same content, valid schema, no commentary.`;
+}
+
+/** One-retry repair prompt after the numeric verifier flags values that don't match the data. */
+export function numericRepairPrompt(contradictions: Array<{ location: string; label: string; claimed: number; expected?: number; source?: string; note?: string }>): string {
+  const lines = contradictions
+    .slice(0, 10)
+    .map(
+      (c) =>
+        `- ${c.location}: you stated ${c.label} = ${c.claimed}${
+          c.expected !== undefined ? `, but the data says ${c.expected}` : ''
+        }${c.source ? ` (${c.source})` : ''}.${c.note ? ` ${c.note}` : ''}`,
+    )
+    .join('\n');
+  return `Your previous reply contains numbers that do NOT match the supplied data blocks:
+${lines}
+
+Fix EVERY flagged value so it matches the data blocks in the earlier message exactly. Do not invent or estimate numbers — use only values present in the data, and make sure any suggested allocation percentages sum to 100. Keep all other content the same. Reply with ONLY the corrected JSON object.`;
+}
+
+/** One-retry repair prompt after the compliance scan flags prohibited claims (Phase 4). */
+export function compliancePrompt(flags: Array<{ rule: string; match: string; location: string }>): string {
+  const lines = flags
+    .slice(0, 10)
+    .map((f) => `- ${f.location}: "${f.match}" violates ${f.rule}`)
+    .join('\n');
+  return `Your previous reply contains claims that break financial-advice compliance (never promise guaranteed, assured, or risk-free returns; never promise profit):
+${lines}
+
+Rewrite to remove every such claim. Use calibrated language instead ("historically", "may", "aims to", "has tended to") and keep all other content the same. Reply with ONLY the corrected JSON object.`;
 }

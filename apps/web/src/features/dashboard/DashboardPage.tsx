@@ -34,6 +34,25 @@ export default function DashboardPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Default-profile banner (user skipped onboarding) */}
+      {summary.onboardingSkipped && (
+        <div className="glass flex flex-wrap items-center justify-between gap-3 border-status-warning/25 bg-status-warning/[0.06] p-4">
+          <div className="flex items-center gap-3">
+            <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-status-warning" />
+            <p className="text-sm text-slate-300">
+              You&apos;re exploring on a <span className="font-semibold text-white">default profile</span> — numbers and
+              advice are generic until you personalize.
+            </p>
+          </div>
+          <Link
+            to="/onboarding"
+            className="glass glass-hover inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-accent-soft"
+          >
+            Personalize now <ArrowRightIcon className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Header + indices strip */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>

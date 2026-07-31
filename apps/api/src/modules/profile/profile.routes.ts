@@ -18,6 +18,15 @@ profileRouter.post(
   }),
 );
 
+/** "Skip for now" — provision the neutral default profile so the user can explore immediately. */
+profileRouter.post(
+  '/onboarding/skip',
+  asyncHandler(async (req, res) => {
+    const profile = await profileService.skipOnboarding((req as AuthedRequest).userId);
+    res.status(201).json({ profile });
+  }),
+);
+
 profileRouter.get(
   '/',
   asyncHandler(async (req, res) => {

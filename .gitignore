@@ -9,15 +9,26 @@ build/
 coverage/
 .vite/
 apps/api/prisma/migrations/dev.db*
+
+# Generated knowledge-base + memory stores (JSON) — the sample .md stays tracked
+apps/api/knowledge/*.json
+# …but the curated ingest manifest IS tracked
+!apps/api/knowledge/manifest.json
+# …and the embedding-free deploy copy of the card store IS tracked (small; production keyword retrieval)
+!apps/api/knowledge/cards-lite.json
 .idea/
 .vscode/
 
 # ── Documentation kept local (not published) ─────────────────
 # Only README.md is tracked; all other markdown docs stay out of the repo.
-# Screenshots under docs/screenshots/ are intentionally NOT ignored (README uses them).
+# docs/ additionally holds the KNOWLEDGE CORPUS (Varsity modules + book
+# markdown/PDFs) — copyrighted source material that must NEVER be pushed.
+# Production gets the distilled cards via apps/api/knowledge/cards-lite.json.
+# Screenshots under docs/screenshots/ are intentionally kept (README uses them).
 /PROJECT_EXPLAINED.md
 /FUTURE_CHANGES.md
 /TERMINALCHAT.md
 /ARCHITECTURE.md
 /DATAFLOW.md
-docs/*.md
+docs/*
+!docs/screenshots

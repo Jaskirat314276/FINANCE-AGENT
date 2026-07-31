@@ -14,7 +14,12 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "test:engines": "tsx src/tests/engines.test.ts"
+    "test:engines": "tsx src/tests/engines.test.ts",
+    "test:knowledge": "tsx src/tests/knowledge.test.ts",
+    "test:guards": "tsx src/tests/guards.test.ts",
+    "knowledge:ingest": "tsx src/scripts/ingest-knowledge.ts",
+    "knowledge:export": "tsx src/scripts/export-knowledge.ts",
+    "eval:advisor": "tsx src/scripts/eval-advisor.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "6.19.3",
