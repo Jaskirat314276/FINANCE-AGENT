@@ -33,7 +33,9 @@ screenerRouter.get(
   asyncHandler(async (req, res) => {
     const q = getValidatedQuery<typeof screenerQuerySchema>(req);
 
-    let candidates = STOCK_UNIVERSE;
+    // Screener runs on the curated set — it fetches quote+fundamentals per
+    // candidate, which must stay bounded (500 stocks ≈ 1,000 provider calls).
+    let candidates = STOCK_UNIVERSE.filter((s) => s.curated);
     if (q.sector) candidates = candidates.filter((s) => s.sector === q.sector);
     if (q.mcap) candidates = candidates.filter((s) => s.mcap === q.mcap);
 

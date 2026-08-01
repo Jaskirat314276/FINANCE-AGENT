@@ -16,6 +16,12 @@ export interface UniverseStock {
   dividendPayer: boolean;
   esgFriendly: boolean;
   yahooSymbol: string; // e.g. "TCS.NS"
+  /**
+   * True for the hand-vetted subset with reliable data quality. The portfolio
+   * engine, screener and market snapshot operate on curated stocks only;
+   * search/quotes/detail/watchlist cover the full universe.
+   */
+  curated?: boolean;
 }
 
 export interface Quote {

@@ -1,11 +1,14 @@
 import type { UniverseStock } from '../types/market';
+import { NIFTY500_EXTENSION } from './stocks500.generated';
 
 /**
- * Curated NSE universe used by the portfolio engine, screener and the
- * offline demo dataset. This is NOT a recommendation list — it is a
- * liquid, well-covered set the engine filters by the user's profile.
+ * Hand-curated NSE set used by the portfolio engine, screener, market
+ * snapshot and the offline demo dataset. This is NOT a recommendation list —
+ * it is a liquid, well-covered set the engine filters by the user's profile.
+ * The full searchable universe (NIFTY 500) is assembled below by appending
+ * the generated extension list.
  */
-export const STOCK_UNIVERSE: UniverseStock[] = [
+const CURATED_RAW: UniverseStock[] = [
   // ── Technology ──────────────────────────────────────────
   { symbol: 'TCS', name: 'Tata Consultancy Services', sector: 'TECHNOLOGY', mcap: 'LARGE', blueChip: true, dividendPayer: true, esgFriendly: true, yahooSymbol: 'TCS.NS' },
   { symbol: 'INFY', name: 'Infosys', sector: 'TECHNOLOGY', mcap: 'LARGE', blueChip: true, dividendPayer: true, esgFriendly: true, yahooSymbol: 'INFY.NS' },
@@ -59,6 +62,21 @@ export const STOCK_UNIVERSE: UniverseStock[] = [
   // ── Telecom ─────────────────────────────────────────────
   { symbol: 'BHARTIARTL', name: 'Bharti Airtel', sector: 'TELECOM', mcap: 'LARGE', blueChip: true, dividendPayer: true, esgFriendly: false, yahooSymbol: 'BHARTIARTL.NS' },
 ];
+
+/** The hand-vetted subset — reliable data quality; used by engine/screener/snapshot. */
+export const CURATED_UNIVERSE: UniverseStock[] = CURATED_RAW.map((s) => ({ ...s, curated: true }));
+
+/** Full searchable universe: curated set + NIFTY 500 extension (deduped). */
+export const STOCK_UNIVERSE: UniverseStock[] = [
+  ...CURATED_UNIVERSE,
+  ...NIFTY500_EXTENSION.filter((s) => !CURATED_RAW.some((c) => c.symbol === s.symbol)),
+];
+
+/**
+ * The subset whose quotes are bulk-fetched for the market snapshot (top
+ * movers, sector performance). Bounded to stay polite to keyless providers.
+ */
+export const SNAPSHOT_UNIVERSE: UniverseStock[] = CURATED_UNIVERSE;
 
 export const UNIVERSE_BY_SYMBOL: Record<string, UniverseStock> = Object.fromEntries(
   STOCK_UNIVERSE.map((s) => [s.symbol, s]),

@@ -198,7 +198,9 @@ async function selectStocks(
   totalAmount: number,
 ): Promise<StockPick[]> {
   const avoid = new Set(profile.avoidSectors);
-  const candidates = STOCK_UNIVERSE.filter((s) => !avoid.has(s.sector));
+  // Engine picks come from the hand-vetted curated set only — recommendations
+  // require reliable fundamentals, which the long tail of the 500 can't promise.
+  const candidates = STOCK_UNIVERSE.filter((s) => s.curated && !avoid.has(s.sector));
 
   const enriched: ScoredStock[] = [];
   for (const s of candidates) {

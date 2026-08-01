@@ -83,3 +83,73 @@ export const SAMPLE_NEWS_TEMPLATES = [
   { title: 'FII flows swing sector positioning; {name} among most-traded names', source: 'Demo Markets' },
   { title: '{name} board to consider dividend at upcoming meeting', source: 'Demo Business' },
 ];
+
+// ── Procedural rows for the NIFTY-500 extension ─────────────────────────────
+// The hand-written rows above cover the curated set. Every other universe
+// symbol gets a deterministic (seeded) but plausible row so demo mode renders
+// real-looking fundamentals for all ~500 stocks. Internally consistent:
+// eps = price / pe, revenue scaled from mcap.
+
+import { UNIVERSE_BY_SYMBOL } from '@seeker/shared';
+
+function synthHash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function synthRng(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const r2 = (n: number): number => Math.round(n * 100) / 100;
+
+const MCAP_RANGES: Record<string, { price: [number, number]; mcapCr: [number, number] }> = {
+  LARGE: { price: [400, 4000], mcapCr: [50_000, 900_000] },
+  MID: { price: [200, 3000], mcapCr: [9_000, 50_000] },
+  SMALL: { price: [90, 1800], mcapCr: [1_500, 9_000] },
+};
+
+const synthCache = new Map<string, SampleFundamentalRow>();
+
+function synthRow(symbol: string): SampleFundamentalRow {
+  const hit = synthCache.get(symbol);
+  if (hit) return hit;
+  const rng = synthRng(synthHash(symbol));
+  const mcapClass = UNIVERSE_BY_SYMBOL[symbol]?.mcap ?? 'MID';
+  const range = MCAP_RANGES[mcapClass] ?? MCAP_RANGES.MID!;
+  const price = r2(range.price[0] + rng() * (range.price[1] - range.price[0]));
+  const pe = r2(14 + rng() * 32); // 14–46
+  const row: SampleFundamentalRow = {
+    price,
+    pe,
+    eps: r2(price / pe),
+    pb: r2(1.5 + rng() * 9),
+    roe: r2(8 + rng() * 26),
+    roce: r2(9 + rng() * 30),
+    de: r2(rng() * 1.4),
+    divYield: r2(rng() * 2.4),
+    mcap: Math.round(range.mcapCr[0] + rng() * (range.mcapCr[1] - range.mcapCr[0])) * CR,
+    revenue: Math.round((range.mcapCr[0] + rng() * (range.mcapCr[1] - range.mcapCr[0])) / (2 + rng() * 3)) * CR,
+    revGrowth: r2(2 + rng() * 20),
+    profitGrowth: r2(rng() * 26),
+    beta: r2(0.7 + rng() * 0.8),
+  };
+  synthCache.set(symbol, row);
+  return row;
+}
+
+/** Sample row for any universe symbol: hand-written when curated, seeded-synthetic otherwise. */
+export function getSampleRow(symbol: string): SampleFundamentalRow {
+  return SAMPLE_FUNDAMENTALS[symbol] ?? synthRow(symbol);
+}

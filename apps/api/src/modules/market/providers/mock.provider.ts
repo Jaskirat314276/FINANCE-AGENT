@@ -2,7 +2,7 @@ import type { Candle, CandleRange, Fundamentals, IndexQuote, NewsItem, Quote } f
 import { UNIVERSE_BY_SYMBOL, STOCK_UNIVERSE } from '@seeker/shared';
 import type { MarketDataProvider } from './types';
 import { RANGE_TO_DAYS } from './types';
-import { SAMPLE_FUNDAMENTALS, SAMPLE_INDICES, SAMPLE_NEWS_TEMPLATES } from './sample-data';
+import { getSampleRow, SAMPLE_INDICES, SAMPLE_NEWS_TEMPLATES } from './sample-data';
 
 const SOURCE = 'mock (demo data)';
 
@@ -33,10 +33,10 @@ function dayIndex(): number {
 }
 
 function baseFor(symbol: string): { price: number; beta: number } {
-  const row = SAMPLE_FUNDAMENTALS[symbol];
-  if (row) return { price: row.price, beta: row.beta };
-  const rng = mulberry32(hashCode(symbol));
-  return { price: 200 + rng() * 2800, beta: 0.8 + rng() * 0.8 };
+  // getSampleRow always returns a row (hand-written or seeded-synthetic), so
+  // quotes, candles and fundamentals stay mutually consistent for all ~500 stocks.
+  const row = getSampleRow(symbol);
+  return { price: row.price, beta: row.beta };
 }
 
 /**
@@ -118,7 +118,7 @@ export class MockProvider implements MarketDataProvider {
   }
 
   async getFundamentals(symbol: string): Promise<Fundamentals> {
-    const row = SAMPLE_FUNDAMENTALS[symbol];
+    const row = getSampleRow(symbol);
     const { price } = baseFor(symbol);
     return {
       symbol,

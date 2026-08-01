@@ -11,7 +11,7 @@ import type {
   StockOverview,
   UniverseStock,
 } from '@seeker/shared';
-import { INDEX_DEFS, STOCK_UNIVERSE, UNIVERSE_BY_SYMBOL } from '@seeker/shared';
+import { INDEX_DEFS, SNAPSHOT_UNIVERSE, STOCK_UNIVERSE, UNIVERSE_BY_SYMBOL } from '@seeker/shared';
 import { env } from '../../config/env';
 import { cached } from '../../lib/cache';
 import { logger } from '../../lib/logger';
@@ -152,7 +152,9 @@ async function mapWithConcurrency<T, R>(
 
 async function universeQuotes(): Promise<Quote[]> {
   const { value } = await cached('universe:quotes', { ttlMs: SNAPSHOT_TTL }, async () => {
-    const quotes = await mapWithConcurrency(STOCK_UNIVERSE, 8, (s) => getQuote(s.symbol));
+    // Bulk-fetch only the curated snapshot subset — the full 500-stock universe
+    // would hammer keyless providers; those stocks are fetched per-symbol on demand.
+    const quotes = await mapWithConcurrency(SNAPSHOT_UNIVERSE, 8, (s) => getQuote(s.symbol));
     return quotes.filter((q): q is Quote => q !== null);
   });
   return value;
