@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env';
+import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { authRouter } from './modules/auth/auth.routes';
 import { profileRouter } from './modules/profile/profile.routes';
@@ -20,9 +21,16 @@ export function createApp(): express.Express {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(helmet());
+  // Normalize configured origins defensively — dashboard-pasted values often
+  // carry stray quotes, trailing slashes, or whitespace, and a browser Origin
+  // header never has any of those. Logged at boot so misconfig is visible.
+  const corsOrigins = env.CORS_ORIGIN.split(',')
+    .map((o) => o.trim().replace(/^["']+|["']+$/g, '').replace(/\/+$/, ''))
+    .filter(Boolean);
+  logger.info(`CORS origins: [${corsOrigins.join(' | ')}]`);
   app.use(
     cors({
-      origin: env.CORS_ORIGIN.split(',').map((o) => o.trim()),
+      origin: corsOrigins,
       credentials: true,
     }),
   );

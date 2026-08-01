@@ -34,4 +34,5 @@ services:
       - key: EMBEDDINGS_PROVIDER
         value: none # no Ollama in the cloud → keyword retrieval over the shipped card store
       - key: KNOWLEDGE_STORE_PATH
-        value: apps/api/knowledge/cards-lite.json
+        # relative to the API's working directory (npm -w runs with cwd=apps/api)
+        value: knowledge/cards-lite.json
